@@ -1,26 +1,170 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Fonts */
+  --font-sans: var(--font-montserrat);
+  --font-serif: var(--font-playfair);
+
+  /* Brand Cyan — identical on every site */
+  --color-brand-cyan: #38bdf8;
+
+  /* Hub background palette */
+  --color-charcoal-950: #0c0c0b;
+  --color-charcoal-900: #111110;
+  --color-charcoal-800: #1a1917;
+  --color-charcoal-700: #242320;
+  --color-charcoal-600: #2e2d29;
+  --color-charcoal-500: #3a3935;
+
+  --color-cream-50:  #fdf9f2;
+  --color-cream-100: #f8f3e8;
+  --color-cream-200: #f2ead8;
+  --color-cream-300: #e8dfc8;
+  --color-cream-400: #d8cfb8;
+
+  /* Pillar accent palettes */
+  --color-cyan-400:  #38bdf8;
+  --color-cyan-500:  #0ea5e9;
+  --color-cyan-600:  #0284c7;
+  --color-gold-dark: #c9922a;
+  --color-gold-light:#9a6c14;
+  --color-rust:      #a0462a;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Dark mode strategy using .dark class */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Theme tokens: dark (default) ─────────────────────────────────────── */
+:root {
+  --bg:           #111110;
+  --surface:      #1a1917;
+  --surface-2:    #242320;
+  --text:         #f8f3e8;
+  --text-mid:     #a09b92;
+  --text-muted:   #6a6560;
+  --accent:       #38bdf8;
+  --accent-light: #7dd3fc;
+  --accent-dim:   rgba(56, 189, 248, 0.12);
+  --border:       rgba(255, 255, 255, 0.08);
+  --border-accent:rgba(56, 189, 248, 0.22);
+  --nav-bg:       rgba(17, 17, 16, 0.88);
+  --brand-cyan:   #38bdf8;
+}
+
+/* ─── Theme tokens: light ───────────────────────────────────────────────── */
+.light {
+  --bg:           #f8f3e8;
+  --surface:      #f2ead8;
+  --surface-2:    #e8dfc8;
+  --text:         #1a1917;
+  --text-mid:     #58534c;
+  --text-muted:   #8a8580;
+  --accent:       #0284c7;
+  --accent-light: #38bdf8;
+  --accent-dim:   rgba(2, 132, 199, 0.10);
+  --border:       rgba(0, 0, 0, 0.09);
+  --border-accent:rgba(2, 132, 199, 0.22);
+  --nav-bg:       rgba(248, 243, 232, 0.92);
+  --brand-cyan:   #38bdf8;
+}
+
+/* ─── Base styles ─────────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-montserrat), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Theme transition — only bg and color, per design spec */
+@media (prefers-reduced-motion: no-preference) {
+  body,
+  nav,
+  footer {
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-playfair), serif;
+}
+
+/* ─── Eyebrow label ───────────────────────────────────────────────────── */
+.eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.eyebrow::after {
+  content: '';
+  display: inline-block;
+  width: 36px;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+/* ─── Shine divider ───────────────────────────────────────────────────── */
+.shine-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.45;
+  border: none;
+}
+
+/* ─── Skip link ───────────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 0 0 4px 4px;
+  transition: top 0.15s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ─── Focus rings ─────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ─── Reveal animation ────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
 }
