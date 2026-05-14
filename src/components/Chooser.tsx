@@ -98,11 +98,19 @@ interface ChooserProps {
   resetParam: boolean;
 }
 
+interface PendingRedirect {
+  branch: Branch;
+  url: string;
+  seconds: number;
+}
+
 export default function Chooser({ hubParam, resetParam }: ChooserProps) {
   const router = useRouter();
   const [openCards, setOpenCards] = useState<Set<Branch>>(new Set());
   const [redirectChecked, setRedirectChecked] = useState(false);
+  const [pendingRedirect, setPendingRedirect] = useState<PendingRedirect | null>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /* Cookie + redirect logic; desktop default-open state */
   useEffect(() => {
@@ -112,7 +120,9 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
     } else {
       const preferred = getCookie('ss_preferred_site') as Branch | null;
       if (preferred && !hubParam && BRANCH_URLS[preferred]) {
-        router.replace(`${BRANCH_URLS[preferred]}?from=hub`);
+        setPendingRedirect({ branch: preferred, url: `${BRANCH_URLS[preferred]}?from=hub`, seconds: 5 });
+        setRedirectChecked(true);
+        if (isDesktop()) setOpenCards(new Set(ALL_BRANCHES));
         return;
       }
       setRedirectChecked(true);
@@ -122,6 +132,40 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
       setOpenCards(new Set(ALL_BRANCHES));
     }
   }, [hubParam, resetParam, router]);
+
+  /* Countdown tick */
+  useEffect(() => {
+    if (!pendingRedirect) return;
+
+    countdownRef.current = setInterval(() => {
+      setPendingRedirect((prev) => {
+        if (!prev) return null;
+        if (prev.seconds <= 1) {
+          clearInterval(countdownRef.current!);
+          window.location.href = prev.url;
+          return null;
+        }
+        return { ...prev, seconds: prev.seconds - 1 };
+      });
+    }, 1000);
+
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [pendingRedirect?.url]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function cancelRedirect() {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    countdownRef.current = null;
+    setPendingRedirect(null);
+    plausible('redirect_cancelled');
+  }
+
+  function executeRedirect(url: string) {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    plausible('redirect_proceeded');
+    window.location.href = url;
+  }
 
   /* Keyboard: arrow keys cycle focus; Escape closes all */
   const handleKeyDown = useCallback(
@@ -166,6 +210,8 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
     return null;
   }
 
+  const redirectCard = pendingRedirect ? CARDS.find((c) => c.id === pendingRedirect.branch) ?? null : null;
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
       {/* ── Hero ──────────────────────────────────────────────────────── */}
@@ -189,6 +235,48 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
           </p>
         </div>
       </section>
+
+      {/* ── Redirect countdown banner ─────────────────────────────────── */}
+      {pendingRedirect && redirectCard && (
+        <div className="px-5 md:px-10 pb-6" style={{ background: 'var(--bg)' }}>
+          <div className="max-w-[1100px] mx-auto w-full">
+            <div
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5"
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderLeft: `3px solid ${redirectCard.pillarColor}`,
+              }}
+            >
+              <p className="font-sans text-sm" style={{ color: 'var(--text-muted)' }}>
+                Redirecting to{' '}
+                <span style={{ color: 'var(--text)', fontWeight: 600 }}>{redirectCard.title}</span>
+                {' '}in{' '}
+                <span style={{ color: redirectCard.pillarColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                  {pendingRedirect.seconds}
+                </span>
+                {' '}second{pendingRedirect.seconds !== 1 ? 's' : ''}.
+              </p>
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={cancelRedirect}
+                  className="text-xs tracking-[0.12em] uppercase font-sans font-semibold px-4 py-2 transition-opacity duration-150 hover:opacity-70"
+                  style={{ color: 'var(--text-muted)', border: '1px solid var(--border)', background: 'transparent' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => executeRedirect(pendingRedirect.url)}
+                  className="text-xs tracking-[0.12em] uppercase font-sans font-semibold px-4 py-2 transition-opacity duration-150 hover:opacity-80"
+                  style={{ background: redirectCard.pillarColor, color: '#fff', border: 'none' }}
+                >
+                  Go to {redirectCard.title} →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Cards ─────────────────────────────────────────────────────── */}
       <section
