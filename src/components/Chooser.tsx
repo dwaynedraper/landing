@@ -104,13 +104,21 @@ interface PendingRedirect {
   seconds: number;
 }
 
+const COUNTDOWN_TOTAL = 5;
+
 export default function Chooser({ hubParam, resetParam }: ChooserProps) {
   const router = useRouter();
   const [openCards, setOpenCards] = useState<Set<Branch>>(new Set());
   const [redirectChecked, setRedirectChecked] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState<PendingRedirect | null>(null);
+  const [isDesktopView, setIsDesktopView] = useState(false);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /* Detect desktop on mount */
+  useEffect(() => {
+    setIsDesktopView(isDesktop());
+  }, []);
 
   /* Cookie + redirect logic; desktop default-open state */
   useEffect(() => {
@@ -120,7 +128,7 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
     } else {
       const preferred = getCookie('ss_preferred_site') as Branch | null;
       if (preferred && !hubParam && BRANCH_URLS[preferred]) {
-        setPendingRedirect({ branch: preferred, url: `${BRANCH_URLS[preferred]}?from=hub`, seconds: 5 });
+        setPendingRedirect({ branch: preferred, url: `${BRANCH_URLS[preferred]}?from=hub`, seconds: COUNTDOWN_TOTAL });
         setRedirectChecked(true);
         if (isDesktop()) setOpenCards(new Set(ALL_BRANCHES));
         return;
@@ -154,6 +162,16 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
     };
   }, [pendingRedirect?.url]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* Escape key dismisses modal */
+  useEffect(() => {
+    if (!pendingRedirect) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') cancelRedirect();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [pendingRedirect]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function cancelRedirect() {
     if (countdownRef.current) clearInterval(countdownRef.current);
     countdownRef.current = null;
@@ -167,7 +185,7 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
     window.location.href = url;
   }
 
-  /* Keyboard: arrow keys cycle focus; Escape closes all */
+  /* Keyboard: arrow keys cycle focus; Escape closes all cards */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent, idx: number) => {
       if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
@@ -184,15 +202,14 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
   );
 
   function toggleCard(id: Branch) {
+    if (isDesktopView) return;
     setOpenCards((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
         plausible('branch_card_collapsed', { props: { branch: id } });
       } else {
-        if (!isDesktop()) {
-          next.clear();
-        }
+        next.clear();
         next.add(id);
         plausible('branch_card_expanded', { props: { branch: id } });
       }
@@ -210,124 +227,231 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
     return null;
   }
 
-  const redirectCard = pendingRedirect ? CARDS.find((c) => c.id === pendingRedirect.branch) ?? null : null;
+  const redirectCard = pendingRedirect
+    ? CARDS.find((c) => c.id === pendingRedirect.branch) ?? null
+    : null;
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
-      {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section
-        className="flex flex-col justify-center px-5 md:px-10 pt-16 pb-10 md:pt-24 md:pb-14"
-        style={{ background: 'var(--bg)' }}
-      >
-        <div className="max-w-[1100px] mx-auto w-full">
-          <h1
-            className="text-[clamp(2.5rem,8vw,5.25rem)] font-serif font-light leading-[1.1] mb-5"
-            style={{ color: 'var(--text)' }}
-          >
-            Three doors.{' '}
-            <em style={{ fontStyle: 'italic', color: 'var(--brand-cyan)' }}>One studio.</em>
-          </h1>
-          <p
-            className="text-xl md:text-2xl font-sans"
-            style={{ color: 'var(--text)' }}
-          >
-            Which one are you here for?
-          </p>
-        </div>
-      </section>
-
-      {/* ── Redirect countdown banner ─────────────────────────────────── */}
+    <>
+      {/* ── Redirect modal ────────────────────────────────────────────── */}
       {pendingRedirect && redirectCard && (
-        <div className="px-5 md:px-10 pb-6" style={{ background: 'var(--bg)' }}>
-          <div className="max-w-[1100px] mx-auto w-full">
+        <>
+          <div
+            onClick={cancelRedirect}
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.55)',
+              zIndex: 9998,
+            }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Redirecting to ${redirectCard.title}`}
+            style={{
+              position: 'fixed',
+              top: '5rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 'min(460px, calc(100vw - 2rem))',
+              zIndex: 9999,
+              background: 'var(--surface)',
+              border: `1px solid ${redirectCard.pillarColor}55`,
+              borderTop: `3px solid ${redirectCard.pillarColor}`,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+              padding: '1.75rem 1.75rem 1.5rem',
+            }}
+          >
+            <p
+              className="font-serif font-light text-xl mb-1"
+              style={{ color: 'var(--text)' }}
+            >
+              {redirectCard.title}
+            </p>
+            <p className="font-sans text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
+              Redirecting in{' '}
+              <span
+                style={{
+                  color: redirectCard.pillarColor,
+                  fontWeight: 700,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {pendingRedirect.seconds}
+              </span>{' '}
+              second{pendingRedirect.seconds !== 1 ? 's' : ''}.
+            </p>
+
+            {/* Progress bar */}
             <div
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5"
               style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderLeft: `3px solid ${redirectCard.pillarColor}`,
+                height: '2px',
+                background: 'var(--border)',
+                marginBottom: '1.5rem',
+                overflow: 'hidden',
               }}
             >
-              <p className="font-sans text-sm" style={{ color: 'var(--text-muted)' }}>
-                Redirecting to{' '}
-                <span style={{ color: 'var(--text)', fontWeight: 600 }}>{redirectCard.title}</span>
-                {' '}in{' '}
-                <span style={{ color: redirectCard.pillarColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                  {pendingRedirect.seconds}
-                </span>
-                {' '}second{pendingRedirect.seconds !== 1 ? 's' : ''}.
-              </p>
-              <div className="flex items-center gap-3 shrink-0">
-                <button
-                  onClick={cancelRedirect}
-                  className="text-xs tracking-[0.12em] uppercase font-sans font-semibold px-4 py-2 transition-opacity duration-150 hover:opacity-70"
-                  style={{ color: 'var(--text-muted)', border: '1px solid var(--border)', background: 'transparent' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => executeRedirect(pendingRedirect.url)}
-                  className="text-xs tracking-[0.12em] uppercase font-sans font-semibold px-4 py-2 transition-opacity duration-150 hover:opacity-80"
-                  style={{ background: redirectCard.pillarColor, color: '#fff', border: 'none' }}
-                >
-                  Go to {redirectCard.title} →
-                </button>
-              </div>
+              <div
+                style={{
+                  height: '100%',
+                  background: redirectCard.pillarColor,
+                  width: `${(pendingRedirect.seconds / COUNTDOWN_TOTAL) * 100}%`,
+                  transition: 'width 0.9s linear',
+                }}
+              />
             </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={cancelRedirect}
+                className="flex-1 text-xs tracking-[0.12em] uppercase font-sans font-semibold py-3 transition-opacity duration-150 hover:opacity-70"
+                style={{
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border)',
+                  background: 'transparent',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => executeRedirect(pendingRedirect.url)}
+                className="flex-1 text-xs tracking-[0.12em] uppercase font-sans font-semibold py-3 transition-opacity duration-150 hover:opacity-80"
+                style={{ background: redirectCard.pillarColor, color: '#fff', border: 'none' }}
+              >
+                Go now →
+              </button>
+            </div>
+            <p
+              className="text-xs mt-3 text-center"
+              style={{ color: 'var(--text-muted)', opacity: 0.6 }}
+            >
+              Click outside or press Esc to cancel
+            </p>
           </div>
-        </div>
+        </>
       )}
 
-      {/* ── Cards ─────────────────────────────────────────────────────── */}
-      <section
-        className="flex-1 px-5 md:px-10 pb-10"
-        style={{ background: 'var(--bg)' }}
-        aria-label="Choose a Sharp Sighted branch"
-      >
-        <div className="max-w-[1100px] mx-auto w-full">
-          <div
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
-            role="list"
-          >
-            {CARDS.map((card, idx) => (
-              <BranchCard
-                key={card.id}
-                card={card}
-                isOpen={openCards.has(card.id)}
-                onToggle={() => toggleCard(card.id)}
-                onVisit={() => handleVisit(card)}
-                onKeyDown={(e) => handleKeyDown(e, idx)}
-                ref={(el) => { cardRefs.current[idx] = el; }}
-              />
-            ))}
-          </div>
-
-          {/* 4th option */}
-          <div className="mt-8 text-center">
-            <Link
-              href="/about"
-              onClick={() => plausible('stay_on_hub_clicked')}
-              className="text-sm"
-              style={{ color: 'var(--brand-cyan)' }}
-            >
-              Just learning about Sharp Sighted?{' '}
-              <span className="font-semibold">Stay on the hub →</span>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Closing tagline ───────────────────────────────────────────── */}
-      <div
-        className="px-5 md:px-10 py-12 text-center"
-        style={{ borderTop: '1px solid var(--border)' }}
-      >
-        <p
-          className="font-serif font-light italic text-base md:text-lg tracking-wide"
-          style={{ color: 'var(--text-muted)' }}
+      <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
+        {/* ── Hero ────────────────────────────────────────────────────── */}
+        <section
+          className="flex flex-col justify-center px-5 md:px-10 pt-16 pb-10 md:pt-24 md:pb-14"
+          style={{ background: 'var(--bg)' }}
         >
-          Stay Sharp. Stay Seen. Stay Human.
-        </p>
+          <div className="max-w-[1100px] mx-auto w-full">
+            <h1
+              className="text-[clamp(2.5rem,8vw,5.25rem)] font-serif font-light leading-[1.1] mb-5"
+              style={{ color: 'var(--text)' }}
+            >
+              Three doors.{' '}
+              <em style={{ fontStyle: 'italic', color: 'var(--brand-cyan)' }}>One studio.</em>
+            </h1>
+            <p
+              className="text-xl md:text-2xl font-sans"
+              style={{ color: 'var(--text)' }}
+            >
+              Which one are you here for?
+            </p>
+          </div>
+        </section>
+
+        {/* ── Thread ──────────────────────────────────────────────────── */}
+        <div className="px-5 md:px-10 pb-10" style={{ background: 'var(--bg)' }}>
+          <p
+            className="max-w-[1100px] mx-auto text-sm md:text-base leading-relaxed"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            The two disciplines look different on paper. In practice, they draw from the same
+            source. A home that reflects its owner deserves to be photographed as an experience,
+            not a floor plan — immersive, with the details that make it distinctly theirs. A
+            portrait taken somewhere that actually matters to the subject says things the face
+            alone can't. Both are about the relationship between people and the places they
+            inhabit. The weighting shifts. The philosophy doesn't.
+          </p>
+        </div>
+
+        {/* ── Cards ───────────────────────────────────────────────────── */}
+        <section
+          className="flex-1 px-5 md:px-10 pb-10"
+          style={{ background: 'var(--bg)' }}
+          aria-label="Choose a Sharp Sighted branch"
+        >
+          <div className="max-w-[1100px] mx-auto w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4" role="list">
+              {CARDS.map((card, idx) => (
+                <BranchCard
+                  key={card.id}
+                  card={card}
+                  isOpen={openCards.has(card.id)}
+                  forceOpen={isDesktopView}
+                  onToggle={() => toggleCard(card.id)}
+                  onVisit={() => handleVisit(card)}
+                  onKeyDown={(e) => handleKeyDown(e, idx)}
+                  ref={(el) => { cardRefs.current[idx] = el; }}
+                />
+              ))}
+
+              {/* Hub card */}
+              <HubCard />
+            </div>
+          </div>
+        </section>
+
+        {/* ── Closing tagline ──────────────────────────────────────────── */}
+        <div
+          className="px-5 md:px-10 py-12 text-center"
+          style={{ borderTop: '1px solid var(--border)' }}
+        >
+          <p
+            className="font-serif font-light italic text-base md:text-lg tracking-wide"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Stay Sharp. Stay Seen. Stay Human.
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function HubCard() {
+  return (
+    <div
+      className="col-span-full relative overflow-hidden rounded-sm"
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+      }}
+    >
+      <div
+        className="absolute top-0 left-0 right-0 h-[2px]"
+        style={{
+          background: 'linear-gradient(90deg, transparent, var(--brand-cyan), transparent)',
+          opacity: 0.2,
+        }}
+        aria-hidden="true"
+      />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-6 py-5 md:px-8 md:py-6">
+        <div className="flex flex-col gap-1">
+          <span
+            className="text-xs tracking-[0.18em] uppercase font-sans font-semibold"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Sharp Sighted
+          </span>
+          <span className="text-sm font-sans" style={{ color: 'var(--text-mid)' }}>
+            Want to learn more about Sharp Sighted?
+          </span>
+        </div>
+        <Link
+          href="/about"
+          onClick={() => plausible('stay_on_hub_clicked')}
+          className="text-xs tracking-[0.12em] uppercase font-sans font-semibold shrink-0 transition-opacity duration-150 hover:opacity-70"
+          style={{ color: 'var(--brand-cyan)' }}
+        >
+          Stay on the hub →
+        </Link>
       </div>
     </div>
   );
@@ -336,6 +460,7 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
 interface BranchCardProps {
   card: CardDef;
   isOpen: boolean;
+  forceOpen: boolean;
   onToggle: () => void;
   onVisit: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
@@ -345,6 +470,7 @@ interface BranchCardProps {
 const BranchCard = ({
   card,
   isOpen,
+  forceOpen,
   onToggle,
   onVisit,
   onKeyDown,
@@ -352,104 +478,126 @@ const BranchCard = ({
 }: BranchCardProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
+  const [hovered, setHovered] = useState(false);
   const prefersReduced =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
-    if (!contentRef.current) return;
+    if (forceOpen || !contentRef.current) return;
     setHeight(isOpen ? contentRef.current.scrollHeight : 0);
-  }, [isOpen]);
+  }, [isOpen, forceOpen]);
 
   const panelId = `card-panel-${card.id}`;
   const triggerId = `card-trigger-${card.id}`;
+  const effectiveOpen = forceOpen || isOpen;
 
   return (
     <div
       role="listitem"
-      className="relative overflow-hidden rounded-sm outline-none"
+      className="relative rounded-sm outline-none"
       style={{
         background: 'var(--surface)',
-        border: `1px solid ${isOpen ? card.pillarColor + '44' : 'var(--border)'}`,
-        transition: prefersReduced ? 'none' : 'border-color 0.2s ease',
+        border: `1px solid ${effectiveOpen ? card.pillarColor + '44' : 'var(--border)'}`,
+        transition: prefersReduced
+          ? 'none'
+          : 'border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease',
+        transform: hovered && !prefersReduced ? 'translateY(-2px) scale(1.01)' : 'none',
+        boxShadow: hovered && !prefersReduced ? `0 8px 28px ${card.pillarColor}2a` : 'none',
       }}
       ref={ref}
       tabIndex={-1}
       onKeyDown={onKeyDown}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       {/* Top shine line */}
       <div
         className="absolute top-0 left-0 right-0 h-[2px]"
         style={{
           background: `linear-gradient(90deg, transparent, ${card.pillarColor}, transparent)`,
-          opacity: isOpen ? 0.65 : 0.35,
+          opacity: effectiveOpen ? 0.65 : 0.35,
           transition: prefersReduced ? 'none' : 'opacity 0.2s ease',
         }}
         aria-hidden="true"
       />
 
-      {/* Trigger / header */}
-      <button
-        id={triggerId}
-        aria-expanded={isOpen}
-        aria-controls={panelId}
-        onClick={onToggle}
-        className="w-full text-left px-6 pt-7 pb-5 flex items-start justify-between gap-4 focus-visible:outline-none"
-        style={{ background: 'transparent' }}
-      >
-        <div className="flex flex-col gap-2 flex-1 min-w-0">
-          <span
-            className="text-sm tracking-[0.18em] uppercase font-sans font-semibold leading-snug"
-            style={{ color: card.pillarColor }}
-          >
-            {card.eyebrow}
-          </span>
-          <span
-            className="text-xl md:text-2xl font-serif font-light leading-tight"
-            style={{ color: 'var(--text)' }}
-          >
-            {card.title}
-          </span>
+      {/* Header — non-interactive on desktop, button on mobile */}
+      {forceOpen ? (
+        <div className="px-6 pt-7 pb-5">
+          <div className="flex flex-col gap-2">
+            <span
+              className="text-sm tracking-[0.18em] uppercase font-sans font-semibold leading-snug"
+              style={{ color: card.pillarColor }}
+            >
+              {card.eyebrow}
+            </span>
+            <span
+              className="text-xl md:text-2xl font-serif font-light leading-tight"
+              style={{ color: 'var(--text)' }}
+            >
+              {card.title}
+            </span>
+          </div>
         </div>
-
-        {/* Chevron */}
-        <span
-          className="flex-shrink-0 mt-1"
-          aria-hidden="true"
-          style={{
-            color: card.pillarColor,
-            transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: prefersReduced ? 'none' : 'transform 0.25s ease',
-            display: 'inline-block',
-            fontSize: '1rem',
-          }}
+      ) : (
+        <button
+          id={triggerId}
+          aria-expanded={isOpen}
+          aria-controls={panelId}
+          onClick={onToggle}
+          className="w-full text-left px-6 pt-7 pb-5 flex items-start justify-between gap-4 focus-visible:outline-none"
+          style={{ background: 'transparent' }}
         >
-          ›
-        </span>
-      </button>
+          <div className="flex flex-col gap-2 flex-1 min-w-0">
+            <span
+              className="text-sm tracking-[0.18em] uppercase font-sans font-semibold leading-snug"
+              style={{ color: card.pillarColor }}
+            >
+              {card.eyebrow}
+            </span>
+            <span
+              className="text-xl md:text-2xl font-serif font-light leading-tight"
+              style={{ color: 'var(--text)' }}
+            >
+              {card.title}
+            </span>
+          </div>
+          <span
+            className="shrink-0 mt-1"
+            aria-hidden="true"
+            style={{
+              color: card.pillarColor,
+              transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: prefersReduced ? 'none' : 'transform 0.25s ease',
+              display: 'inline-block',
+              fontSize: '1rem',
+            }}
+          >
+            ›
+          </span>
+        </button>
+      )}
 
       {/* Expandable panel */}
       <div
         id={panelId}
         role="region"
-        aria-labelledby={triggerId}
-        style={{
-          height: `${height}px`,
-          overflow: 'hidden',
-          transition: prefersReduced ? 'none' : 'height 0.35s cubic-bezier(0.4,0,0.2,1)',
-        }}
+        aria-labelledby={forceOpen ? undefined : triggerId}
+        style={
+          forceOpen
+            ? { overflow: 'hidden' }
+            : {
+                height: `${height}px`,
+                overflow: 'hidden',
+                transition: prefersReduced ? 'none' : 'height 0.35s cubic-bezier(0.4,0,0.2,1)',
+              }
+        }
       >
         <div ref={contentRef} className="px-6 pb-7 flex flex-col gap-5">
-          <hr
-            className="shine-line"
-            style={{ margin: '0 0 0.5rem' }}
-            aria-hidden="true"
-          />
+          <hr className="shine-line" style={{ margin: '0 0 0.5rem' }} aria-hidden="true" />
 
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: 'var(--text-mid)' }}
-          >
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-mid)' }}>
             {card.description}
           </p>
 
@@ -461,7 +609,7 @@ const BranchCard = ({
                 style={{ color: 'var(--text-mid)' }}
               >
                 <span
-                  className="inline-block w-1 h-1 rounded-full flex-shrink-0"
+                  className="inline-block w-1 h-1 rounded-full shrink-0"
                   style={{ background: card.pillarColor }}
                   aria-hidden="true"
                 />
@@ -476,10 +624,7 @@ const BranchCard = ({
               onVisit();
             }}
             className="self-start inline-flex items-center gap-1.5 text-xs tracking-[0.12em] uppercase font-sans font-semibold px-5 py-3 transition-opacity duration-200 hover:opacity-80"
-            style={{
-              background: card.pillarColor,
-              color: '#ffffff',
-            }}
+            style={{ background: card.pillarColor, color: '#ffffff' }}
           >
             {card.ctaLabel} →
           </button>

@@ -35,8 +35,9 @@ export default function TenPercentPage() {
             className="max-w-2xl text-base md:text-lg leading-relaxed"
             style={{ color: 'var(--text-mid)' }}
           >
-            Sharp Sighted commits ten percent of time, resources, or effort — almost never money —
-            to causes worth showing up for.
+            Ten percent of Sharp Sighted's capacity goes to causes that align with the work.
+            Photography, media, documentation — given freely to the people and missions that
+            deserve it.
           </p>
         </div>
       </section>
@@ -64,9 +65,9 @@ export default function TenPercentPage() {
               className="text-base leading-relaxed"
               style={{ color: 'var(--text-mid)' }}
             >
-              Submissions are reviewed personally by Dean. No intake form, no committee. A short
-              email is enough. Not every cause is accepted — alignment matters — but every
-              submission is read. Expect a reply within two weeks.
+              Reviewed personally by Dean. No form, no committee. The 10% has a ceiling and demand
+              regularly exceeds it — most causes brought to the table are worth helping, and not all
+              of them can be taken on. Every submission gets a response within two weeks.
             </p>
           </div>
         </div>
@@ -85,8 +86,8 @@ export default function TenPercentPage() {
             className="text-xs italic max-w-md"
             style={{ color: 'var(--text-muted)' }}
           >
-            Submissions are reviewed personally. Reply within two weeks. Not every cause is a fit,
-            but every submission is read.
+            Reviewed personally. Replied to within two weeks. Demand regularly exceeds what the
+            10% can carry — every cause is considered, not every one can be taken on.
           </p>
         </div>
       </section>
