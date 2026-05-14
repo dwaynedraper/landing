@@ -6,7 +6,7 @@ import { Providers } from './providers';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 
-const PLAUSIBLE_DOMAIN = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
+const PLAUSIBLE_SCRIPT = process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT;
 
 const playfair = Playfair_Display({
   variable: '--font-playfair',
@@ -87,8 +87,8 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {PLAUSIBLE_DOMAIN && <script async src="https://plausible.io/js/pa-rJNcgCeqyKrYkkNB_nbJ4.js" />}
-        {PLAUSIBLE_DOMAIN && (
+        {PLAUSIBLE_SCRIPT && <script async src={PLAUSIBLE_SCRIPT} />}
+        {PLAUSIBLE_SCRIPT && (
           <script
             dangerouslySetInnerHTML={{
               __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`,
