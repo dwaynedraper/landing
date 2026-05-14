@@ -128,7 +128,7 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
     } else {
       const preferred = getCookie('ss_preferred_site') as Branch | null;
       if (preferred && !hubParam && BRANCH_URLS[preferred]) {
-        setPendingRedirect({ branch: preferred, url: `${BRANCH_URLS[preferred]}?from=hub`, seconds: COUNTDOWN_TOTAL });
+        setPendingRedirect({ branch: preferred, url: `${BRANCH_URLS[preferred]}?from=hub&utm_source=sharpsightedstudio.com&utm_medium=internal`, seconds: COUNTDOWN_TOTAL });
         setRedirectChecked(true);
         if (isDesktop()) setOpenCards(new Set(ALL_BRANCHES));
         return;
@@ -220,7 +220,7 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
   function handleVisit(card: CardDef) {
     setCookie('ss_preferred_site', card.id, 30);
     plausible('branch_visit_clicked', { props: { branch: card.id } });
-    window.location.href = card.ctaHref;
+    window.location.href = `${card.ctaHref}?from=hub&utm_source=sharpsightedstudio.com&utm_medium=internal`;
   }
 
   if (!redirectChecked) {

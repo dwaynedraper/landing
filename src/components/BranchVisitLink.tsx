@@ -22,9 +22,11 @@ export default function BranchVisitLink({
     plausible('about_to_branch_clicked', { props: { branch: cookie } });
   }
 
+  const trackedHref = `${href}?from=hub&utm_source=sharpsightedstudio.com&utm_medium=internal`;
+
   return (
     <a
-      href={href}
+      href={trackedHref}
       onClick={handleClick}
       className={`inline-flex items-center gap-1.5 text-xs tracking-[0.1em] uppercase font-sans font-semibold px-4 py-2.5 transition-opacity duration-200 hover:opacity-80 ${className ?? ''}`}
       style={{

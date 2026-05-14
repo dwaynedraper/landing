@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Playfair_Display, Montserrat } from 'next/font/google';
 import Script from 'next/script';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import { Providers } from './providers';
 import Nav from '@/components/Nav';
@@ -92,7 +93,7 @@ export default function RootLayout({
         {PLAUSIBLE_DOMAIN && (
           <Script
             defer
-            data-domain={PLAUSIBLE_DOMAIN}
+            data-domain={`${PLAUSIBLE_DOMAIN},sharp-sighted-network`}
             src="https://plausible.io/js/script.js"
             strategy="afterInteractive"
           />
@@ -107,6 +108,7 @@ export default function RootLayout({
           </main>
           <Footer activeSite="hub" />
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   );
