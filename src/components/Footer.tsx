@@ -36,7 +36,7 @@ export default function Footer({ activeSite = 'hub' }: FooterProps) {
         borderTop: '1px solid var(--border)',
       }}
     >
-      <div className="max-w-[1100px] mx-auto px-5 md:px-10 py-12 md:py-16">
+      <div className="max-w-275 mx-auto px-5 md:px-10 py-12 md:py-16">
         {/* Wordmark + tagline */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
@@ -80,13 +80,13 @@ export default function Footer({ activeSite = 'hub' }: FooterProps) {
           className="flex flex-wrap gap-x-6 gap-y-2 text-xs tracking-[0.12em] uppercase mb-8"
           style={{ color: 'var(--text-muted)' }}
         >
-          <Link href="/about" className="hover:text-[var(--text)] transition-colors duration-200">
+          <Link href="/about" className="hover:text-(--text) transition-colors duration-200">
             About
           </Link>
-          <Link href="/10-percent" className="hover:text-[var(--text)] transition-colors duration-200">
+          <Link href="/10-percent" className="hover:text-(--text) transition-colors duration-200">
             10% Rule
           </Link>
-          <Link href="/about#contact" className="hover:text-[var(--text)] transition-colors duration-200">
+          <Link href="/about#contact" className="hover:text-(--text) transition-colors duration-200">
             Contact
           </Link>
         </div>
@@ -120,7 +120,7 @@ function BranchLink({
     return (
       <div className="flex items-center gap-2">
         <span
-          className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
+          className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
           style={{ background: 'var(--brand-cyan)' }}
           aria-hidden="true"
         />
@@ -169,7 +169,7 @@ function HubLink({ isActive }: { isActive: boolean }) {
     return (
       <div className="flex items-center gap-2">
         <span
-          className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
+          className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
           style={{ background: 'var(--brand-cyan)' }}
           aria-hidden="true"
         />
@@ -189,7 +189,7 @@ function HubLink({ isActive }: { isActive: boolean }) {
     >
       <span className="text-xs">
         <span
-          className="font-medium tracking-[0.06em] group-hover:text-[var(--brand-cyan)] transition-colors duration-200"
+          className="font-medium tracking-[0.06em] group-hover:text-(--brand-cyan) transition-colors duration-200"
         >
           Hub
         </span>

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Playfair_Display, Montserrat } from 'next/font/google';
-import Script from 'next/script';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import { Providers } from './providers';
@@ -88,16 +87,16 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-      </head>
-      <body className="min-h-screen flex flex-col font-sans">
+        {PLAUSIBLE_DOMAIN && <script async src="https://plausible.io/js/pa-rJNcgCeqyKrYkkNB_nbJ4.js" />}
         {PLAUSIBLE_DOMAIN && (
-          <Script
-            defer
-            data-domain={`${PLAUSIBLE_DOMAIN},sharp-sighted-network`}
-            src="https://plausible.io/js/script.js"
-            strategy="afterInteractive"
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`,
+            }}
           />
         )}
+      </head>
+      <body className="min-h-screen flex flex-col font-sans">
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>
