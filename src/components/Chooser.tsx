@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { plausible } from '@/lib/plausible';
+import RippedOrStampedNote from '@/components/RippedOrStampedNote';
 
 type Branch = 'photos' | 'media' | 'studio';
 
@@ -397,6 +398,9 @@ export default function Chooser({ hubParam, resetParam }: ChooserProps) {
             </div>
           </div>
         </section>
+
+        {/* ── Ripped or Stamped project update ──────────────────────────── */}
+        <RippedOrStampedNote />
 
         {/* ── Closing tagline ──────────────────────────────────────────── */}
         <div
