@@ -3,6 +3,7 @@ import Link from 'next/link';
 import BranchVisitLink from '@/components/BranchVisitLink';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/about' },
   title: 'About',
   description:
     'Sharp Sighted is the multi-genre photography practice of Dean Draper in North Texas. Three specialist branches — portraits, real estate media, and community — under one umbrella.',

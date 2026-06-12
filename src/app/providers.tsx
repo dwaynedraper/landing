@@ -2,15 +2,24 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'dark' | 'light';
+type ThemePref = 'system' | 'dark' | 'light';
+type Resolved = 'dark' | 'light';
 
 interface ThemeContextValue {
-  theme: Theme;
+  /** Preference: system | dark | light. */
+  theme: ThemePref;
+  /** Resolved appearance right now. */
+  resolved: Resolved;
+  /** Set the preference directly. */
+  setTheme: (pref: ThemePref) => void;
+  /** Cycle System → Light → Dark → System. */
   toggle: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: 'dark',
+  theme: 'system',
+  resolved: 'dark',
+  setTheme: () => {},
   toggle: () => {},
 });
 
@@ -18,23 +27,49 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
+function systemResolved(): Resolved {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+const NEXT: Record<ThemePref, ThemePref> = { system: 'light', light: 'dark', dark: 'system' };
+
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
+  // Default to 'system'; a saved 'dark'/'light' is respected as a pin.
+  const [theme, setThemeState] = useState<ThemePref>('system');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem('ss_theme') as Theme | null;
-    const resolved: Theme = stored === 'light' || stored === 'dark' ? stored : 'dark';
-    setTheme(resolved);
+    const stored = localStorage.getItem('ss_theme') as ThemePref | null;
+    const pref: ThemePref =
+      stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing with localStorage, an external store
+    setThemeState(pref);
     setMounted(true);
   }, []);
 
+  // Apply the resolved class + persist the preference.
   useEffect(() => {
     if (!mounted) return;
     const root = document.documentElement;
-    root.classList.toggle('dark', theme === 'dark');
-    root.classList.toggle('light', theme === 'light');
+    const r: Resolved = theme === 'system' ? systemResolved() : theme;
+    root.classList.toggle('dark', r === 'dark');
+    root.classList.toggle('light', r === 'light');
     localStorage.setItem('ss_theme', theme);
+  }, [theme, mounted]);
+
+  // Live OS day/night follow while preference is 'system'.
+  useEffect(() => {
+    if (!mounted) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => {
+      if (theme !== 'system') return;
+      const r = systemResolved();
+      const root = document.documentElement;
+      root.classList.toggle('dark', r === 'dark');
+      root.classList.toggle('light', r === 'light');
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, [theme, mounted]);
 
   /* Reveal animation — runs after each navigation */
@@ -63,18 +98,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => observer.disconnect();
   });
 
-  function toggle() {
-    const next: Theme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
+  function setTheme(next: ThemePref) {
+    setThemeState(next);
     if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).plausible) {
       (window as unknown as { plausible: (e: string, o: { props: Record<string, string> }) => void }).plausible(
         'theme_toggled', { props: { theme: next } }
       );
     }
   }
+  function toggle() {
+    setTheme(NEXT[theme]);
+  }
+
+  const resolved: Resolved =
+    !mounted || typeof window === 'undefined'
+      ? 'dark'
+      : theme === 'system'
+        ? systemResolved()
+        : theme;
 
   return (
-    <ThemeContext.Provider value={{ theme, toggle }}>
+    <ThemeContext.Provider value={{ theme, resolved, setTheme, toggle }}>
       {children}
     </ThemeContext.Provider>
   );

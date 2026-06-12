@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import TenPercentCTA from '@/components/TenPercentCTA';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/10-percent' },
   title: 'The 10% Rule',
   description:
     'Sharp Sighted gives 10% of time, resources, or effort to causes that matter. Submit a cause for consideration.',

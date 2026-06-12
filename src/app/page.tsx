@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Chooser from '@/components/Chooser';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/' },
   title: 'Sharp Sighted — Portraits, Real Estate, Community in North Texas',
   description:
     'Sharp Sighted is the multi-genre photography practice of Dean Draper in North Texas. Three specialist branches under one umbrella: portraits, real estate media, and community.',

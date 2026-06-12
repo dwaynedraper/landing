@@ -40,28 +40,35 @@ export const metadata: Metadata = {
     images: ['/opengraph-image.png'],
   },
   twitter: { card: 'summary_large_image' },
-  alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true },
 };
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
+  '@id': 'https://sharpsightedstudio.com/#organization',
   name: 'Sharp Sighted Studio',
+  legalName: 'Sharp Sighted Studio',
   alternateName: ['Sharp Sighted', 'Sharp Sighted Photos', 'Sharp Sighted Media'],
   url: SITE_URL,
   logo: `${SITE_URL}/logo.png`,
   founder: { '@type': 'Person', name: 'Dean Draper' },
   foundingDate: '2022-07',
   email: 'dean@sharpsightedstudio.com',
-  telephone: '+1-214-233-5338',
-  areaServed: 'Dallas-Fort Worth Metroplex',
+  telephone: '+12142335338',
+  areaServed: [
+    'Allen, TX', 'Plano, TX', 'Frisco, TX', 'McKinney, TX',
+    'Lewisville, TX', 'The Colony, TX', 'Coppell, TX', 'Roanoke, TX',
+    'Denton, TX', 'Grapevine, TX', 'Southlake, TX', 'Colleyville, TX',
+    'Westlake, TX',
+  ],
   sameAs: [
     'https://sharpsighted.photos',
     'https://sharpsighted.media',
     'https://sharpsighted.studio',
     'https://www.instagram.com/sharp_sighted_studio',
     'https://www.facebook.com/sharpsightedstudio',
+    'https://www.linkedin.com/in/dean-draper',
   ],
 };
 
@@ -80,7 +87,7 @@ export default function RootLayout({
         {/* No-FOUC theme script — runs before paint */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('ss_theme');var root=document.documentElement;root.classList.remove('dark','light');root.classList.add(t==='light'?'light':'dark');}catch(e){}})();`,
+            __html: `(function(){try{var p=localStorage.getItem('ss_theme');var sys=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';var r=(p==='light'||p==='dark')?p:sys;var root=document.documentElement;root.classList.remove('dark','light');root.classList.add(r);}catch(e){}})();`,
           }}
         />
         <script
